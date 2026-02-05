@@ -299,14 +299,24 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
                   <Pie data={districtData} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={5} dataKey="value">
                     {districtData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
                   </Pie>
-                  <Tooltip contentStyle={{
-                    borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    fontWeight: 800,
-                    backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
-                    color: isDarkMode ? '#f8fafc' : '#0f172a'
-                  }} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      fontWeight: 800,
+                      backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+                      color: isDarkMode ? '#f8fafc' : '#0f172a'
+                    }}
+                    itemStyle={{
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      fontWeight: 800
+                    }}
+                    labelStyle={{
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      fontWeight: 900
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -339,6 +349,14 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
                       fontWeight: 800,
                       backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
                       color: isDarkMode ? '#f8fafc' : '#0f172a'
+                    }}
+                    itemStyle={{
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      fontWeight: 800
+                    }}
+                    labelStyle={{
+                      color: isDarkMode ? '#f8fafc' : '#0f172a',
+                      fontWeight: 900
                     }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>

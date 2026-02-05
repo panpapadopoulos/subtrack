@@ -1,2 +1,30 @@
 /* SubTrack Pro - Additional Styles */
 /* Tailwind is loaded from CDN, this file is for custom overrides */
+
+/* Fix dropdown option colors - these need explicit styling for browser compatibility */
+/* Dark mode select options */
+select {
+    /* Ensure dropdown options use dark theme by default (matches app default) */
+    background-color: #1e293b;
+    color: #f8fafc;
+}
+
+select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+    padding: 8px;
+}
+
+/* Override for transparent background selects - options still need solid background */
+select.bg-transparent option,
+select[class*="bg-transparent"] option {
+    background-color: #1e293b;
+    color: #f8fafc;
+}
+
+/* Light mode overrides - add .light-select class to selects in light mode */
+.light-select,
+.light-select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
