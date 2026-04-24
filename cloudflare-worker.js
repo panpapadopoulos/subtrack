@@ -166,7 +166,7 @@ function serveLoginPage(error = '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SubTrack - Login</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3Ccircle cx='12' cy='12' r='3' fill='%2310b981' stroke='none'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Crect x='14' y='10' width='32' height='44' rx='7' fill='%23f8fafc'/%3E%3Cpath d='M22 23h16M22 32h15M22 41h9' stroke='%230f172a' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='44' cy='43' r='12' fill='%2310b981' stroke='%230f172a' stroke-width='4'/%3E%3Cpath d='M39 43l3 3 7-8' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -182,9 +182,13 @@ function serveLoginPage(error = '') {
 <body>
     <div class="card">
         <div class="logo">
-            <div style="background:#0f172a; color:white; padding:8px 12px; border-radius:12px; position:relative; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
-                S
-                <div style="position:absolute; top:-4px; right:-4px; width:10px; height:10px; background:#10b981; border:2px solid white; border-radius:50%;"></div>
+            <div style="width:44px; height:44px; background:#0f172a; border-radius:14px; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+                <svg width="30" height="30" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="8" width="34" height="48" rx="8" fill="#f8fafc"/>
+                    <path d="M19 20H36M19 30H35M19 40H29" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+                    <circle cx="43" cy="42" r="13" fill="#10b981" stroke="#0f172a" stroke-width="4"/>
+                    <path d="M38 42.5L41.5 46L49 37.5" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </div>
             SubTrack
         </div>

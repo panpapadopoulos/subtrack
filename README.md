@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# SubTrack
 
-# Run and deploy your AI Studio app
+SubTrack is a private React dashboard for tracking substitute teaching assignments, assistant-sub work, payments, hours, and expected pay.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1fmpNx4W9L2akx-cXULD2zz5fzIk1s0Wr
+- Log teacher-sub and instructional assistant-sub assignments.
+- Track schools, classes, teachers, districts, start/end times, and hours.
+- Calculate expected pay from the saved assignment type.
+- View dashboard totals for paid earnings, expected pay, assignments, hours, school-year periods, monthly trends, district split, and biweekly expected pay.
+- Log actual payment records.
+- Import and export records as CSV.
+- Switch between dark and light mode.
+- Protect the deployed app with a Cloudflare Worker login and store app data through a Cloudflare KV-backed API.
 
-## Run Locally
+## Local Development
 
-**Prerequisites:**  Node.js
+Prerequisites:
 
+- Node.js
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the local Vite server:
+
+```bash
+npm run dev
+```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+## Deployment Notes
+
+The frontend is a Vite app. The included Cloudflare Worker handles password-gated access, proxies the static app, and exposes `/api/data` for loading and saving assignment/payment data.
+
+Do not commit real environment values, passwords, API keys, Cloudflare account details, or production KV data. Keep deployment secrets in your hosting provider's environment/secret settings.

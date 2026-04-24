@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Job } from '../types';
-import { Plus, X, Save, Clock } from 'lucide-react';
+import { Plus, X, Save, GraduationCap, HandHeart } from 'lucide-react';
+import { getDefaultPayRate } from '../utils/payroll';
 
 interface Props {
   onAdd: (job: Job) => void;
@@ -13,8 +14,10 @@ interface Props {
 }
 
 export const JobForm: React.FC<Props> = ({ onAdd, onClose, initialData, uniqueSchools = [], uniqueClasses = [], isDarkMode = true }) => {
+  const [isCustomSchool, setIsCustomSchool] = useState(uniqueSchools.length === 0);
   const [formData, setFormData] = useState<Omit<Job, 'id'>>({
     date: new Date().toISOString().split('T')[0],
+    role: 'teacher',
     className: '',
     teacher: '',
     school: '',
@@ -22,13 +25,15 @@ export const JobForm: React.FC<Props> = ({ onAdd, onClose, initialData, uniqueSc
     dayType: 1,
     fromTime: '08:00',
     toTime: '15:00',
-    hours: 7
+    hours: 7,
+    payRate: getDefaultPayRate('teacher')
   });
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         date: initialData.date,
+        role: initialData.role || 'teacher',
         className: initialData.className,
         teacher: initialData.teacher,
         school: initialData.school,
@@ -36,10 +41,12 @@ export const JobForm: React.FC<Props> = ({ onAdd, onClose, initialData, uniqueSc
         dayType: initialData.dayType,
         fromTime: initialData.fromTime || '08:00',
         toTime: initialData.toTime || '15:00',
-        hours: initialData.hours
+        hours: initialData.hours,
+        payRate: initialData.payRate || getDefaultPayRate(initialData.role || 'teacher')
       });
+      setIsCustomSchool(!uniqueSchools.includes(initialData.school));
     }
-  }, [initialData]);
+  }, [initialData, uniqueSchools]);
 
   // Handle Automatic Hour Calculation
   useEffect(() => {
@@ -83,6 +90,30 @@ export const JobForm: React.FC<Props> = ({ onAdd, onClose, initialData, uniqueSc
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { id: 'teacher', label: 'Teacher Sub', icon: GraduationCap },
+              { id: 'aide', label: 'Assistant Sub', icon: HandHeart },
+            ].map(option => {
+              const Icon = option.icon;
+              const selected = formData.role === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: option.id as 'teacher' | 'aide', payRate: getDefaultPayRate(option.id as 'teacher' | 'aide') })}
+                  className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 font-black transition-all ${selected
+                    ? (isDarkMode ? 'bg-white text-slate-900 border-white' : 'bg-slate-900 text-white border-slate-900')
+                    : (isDarkMode ? 'bg-slate-800/60 text-slate-300 border-slate-700 hover:border-slate-500' : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300')
+                    }`}
+                >
+                  <Icon size={18} />
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
               <label className={`text-xs font-black uppercase tracking-widest ${labelClass}`}>Job Date</label>
@@ -109,18 +140,34 @@ export const JobForm: React.FC<Props> = ({ onAdd, onClose, initialData, uniqueSc
 
           <div className="space-y-1">
             <label className={`text-xs font-black uppercase tracking-widest ${labelClass}`}>School Name</label>
-            <input
-              type="text"
-              list="schools-list"
-              placeholder="e.g. Eads Elementary"
+            <select
               required
               className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-4 transition-all font-bold ${inputClass}`}
-              value={formData.school}
-              onChange={e => setFormData({ ...formData, school: e.target.value })}
-            />
-            <datalist id="schools-list">
-              {uniqueSchools.map(s => <option key={s} value={s} />)}
-            </datalist>
+              value={isCustomSchool ? '__custom__' : formData.school}
+              onChange={e => {
+                if (e.target.value === '__custom__') {
+                  setIsCustomSchool(true);
+                  setFormData({ ...formData, school: '' });
+                } else {
+                  setIsCustomSchool(false);
+                  setFormData({ ...formData, school: e.target.value });
+                }
+              }}
+            >
+              <option value="" disabled>Select a school</option>
+              {uniqueSchools.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="__custom__">Add new school</option>
+            </select>
+            {isCustomSchool && (
+              <input
+                type="text"
+                placeholder="e.g. Eads Elementary"
+                required
+                className={`w-full mt-3 px-4 py-3 border rounded-xl focus:outline-none focus:ring-4 transition-all font-bold ${inputClass}`}
+                value={formData.school}
+                onChange={e => setFormData({ ...formData, school: e.target.value })}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-6">

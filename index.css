@@ -24,7 +24,9 @@ select[class*="bg-transparent"] option {
 
 /* Light mode overrides - add .light-select class to selects in light mode */
 .light-select,
-.light-select option {
+.light-select option,
+select[class*="text-slate-900"],
+select[class*="text-slate-900"] option {
     background-color: #ffffff !important;
     color: #0f172a !important;
 }

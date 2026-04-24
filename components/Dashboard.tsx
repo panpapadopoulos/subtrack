@@ -5,7 +5,8 @@ import {
   Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, ComposedChart, Line
 } from 'recharts';
-import { DollarSign, Briefcase, Clock, Calendar, TrendingUp, BarChart3, Star, ChevronDown, Filter } from 'lucide-react';
+import { DollarSign, Briefcase, Clock, Calendar, TrendingUp, BarChart3, Star, ChevronDown, Filter, WalletCards } from 'lucide-react';
+import { calculateExpectedPay, formatCurrency, getBiweeklyPeriodLabel, getJobRole } from '../utils/payroll';
 
 interface Props {
   jobs: Job[];
@@ -74,25 +75,26 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
 
   const stats = useMemo(() => {
     const totalEarnings = statsPayments.reduce((sum, p) => sum + p.amount, 0);
+    const expectedEarnings = statsJobs.reduce((sum, j) => sum + calculateExpectedPay(j), 0);
     const totalHours = statsJobs.reduce((sum, j) => sum + j.hours, 0);
-    const fullDays = statsJobs.filter(j => j.dayType === 1).length;
-    const halfDays = statsJobs.filter(j => j.dayType === 0.5).length;
+    const teacherJobs = statsJobs.filter(j => getJobRole(j) === 'teacher');
+    const aideJobs = statsJobs.filter(j => getJobRole(j) === 'aide');
+    const fullDays = teacherJobs.filter(j => j.dayType === 1).length;
+    const halfDays = teacherJobs.filter(j => j.dayType === 0.5).length;
 
     return {
       totalEarnings,
+      expectedEarnings,
       totalHours,
       totalJobs: statsJobs.length,
+      aideJobs: aideJobs.length,
       fullDays,
       halfDays
     };
   }, [statsJobs, statsPayments]);
 
-  const formatCurrency = (val: number) => {
-    return `${val.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}$`;
-  };
-
   const monthlyStats = useMemo(() => {
-    const data: Record<string, { key: string, name: string, fullName: string, income: number, count: number }> = {};
+    const data: Record<string, { key: string, name: string, fullName: string, income: number, expected: number, count: number }> = {};
 
     const processDate = (dateStr: string, isPayment: boolean, amount: number = 0) => {
       const d = new Date(dateStr);
@@ -102,7 +104,7 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
       const fullName = local.toLocaleString('default', { month: 'long', year: 'numeric' });
 
       if (!data[key]) {
-        data[key] = { key, name, fullName, income: 0, count: 0 };
+        data[key] = { key, name, fullName, income: 0, expected: 0, count: 0 };
       }
 
       if (isPayment) {
@@ -113,10 +115,33 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
     };
 
     statsPayments.forEach(p => processDate(p.date, true, p.amount));
-    statsJobs.forEach(j => processDate(j.date, false));
+    statsJobs.forEach(j => {
+      processDate(j.date, false);
+      const periodDate = new Date(j.date);
+      const local = new Date(periodDate.getTime() + periodDate.getTimezoneOffset() * 60000);
+      const key = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}`;
+      if (data[key]) data[key].expected += calculateExpectedPay(j);
+    });
 
     return Object.values(data).sort((a, b) => a.key.localeCompare(b.key));
   }, [statsJobs, statsPayments]);
+
+  const payPeriodStats = useMemo(() => {
+    const periods: Record<string, { label: string, sortDate: number, jobs: number, hours: number, expected: number }> = {};
+
+    statsJobs.forEach(job => {
+      const label = getBiweeklyPeriodLabel(job.date);
+      if (!periods[label]) {
+        periods[label] = { label, sortDate: new Date(job.date).getTime(), jobs: 0, hours: 0, expected: 0 };
+      }
+      periods[label].jobs += 1;
+      periods[label].hours += job.hours;
+      periods[label].expected += calculateExpectedPay(job);
+      periods[label].sortDate = Math.max(periods[label].sortDate, new Date(job.date).getTime());
+    });
+
+    return Object.values(periods).sort((a, b) => b.sortDate - a.sortDate).slice(0, 4);
+  }, [statsJobs]);
 
   const weekdayStats = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -189,7 +214,7 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className={`p-7 rounded-3xl shadow-sm border flex items-center space-x-5 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
           }`}>
           <div className="p-4 bg-emerald-100 text-emerald-700 rounded-2xl">
@@ -198,6 +223,16 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
           <div>
             <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Net Earnings</p>
             <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(stats.totalEarnings)}</p>
+          </div>
+        </div>
+        <div className={`p-7 rounded-3xl shadow-sm border flex items-center space-x-5 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+          <div className="p-4 bg-sky-100 text-sky-700 rounded-2xl">
+            <WalletCards size={28} />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Expected Pay</p>
+            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(stats.expectedEarnings)}</p>
           </div>
         </div>
         <div className={`p-7 rounded-3xl shadow-sm border flex items-center space-x-5 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
@@ -233,6 +268,7 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
             </div>
             <div className="flex items-center space-x-4 text-[10px] font-bold">
               <div className="flex items-center"><div className="w-3 h-3 bg-emerald-500 rounded-sm mr-1"></div> Income</div>
+              <div className="flex items-center"><div className="w-3 h-3 bg-sky-500 rounded-sm mr-1"></div> Expected</div>
               <div className="flex items-center"><div className={`w-3 h-3 rounded-sm mr-1 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`}></div> Jobs</div>
             </div>
           </div>
@@ -258,9 +294,10 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
                     const item = items[0]?.payload;
                     return item?.fullName || label;
                   }}
-                  formatter={(value: any, name: string) => [name === 'income' ? formatCurrency(value) : value, name === 'income' ? 'Earnings' : 'Jobs']}
+                  formatter={(value: any, name: string) => [name === 'income' || name === 'expected' ? formatCurrency(value) : value, name === 'income' ? 'Paid' : name === 'expected' ? 'Expected' : 'Jobs']}
                 />
                 <Bar yAxisId="left" dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} />
+                <Bar yAxisId="left" dataKey="expected" fill="#0ea5e9" radius={[6, 6, 0, 0]} barSize={40} />
                 <Line yAxisId="right" type="monotone" dataKey="count" stroke={isDarkMode ? '#ffffff' : '#0f172a'} strokeWidth={3} dot={{ r: 4, fill: isDarkMode ? '#ffffff' : '#0f172a' }} />
               </ComposedChart>
             </ResponsiveContainer>
@@ -284,6 +321,25 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
                 </div>
               ))}
               {classData.length === 0 && <p className="text-xs text-slate-400 italic col-span-2 py-4 text-center">No class data yet</p>}
+            </div>
+          </div>
+
+          <div className={`p-6 rounded-3xl shadow-sm border flex flex-col sm:col-span-2 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
+            <h3 className={`text-sm font-black uppercase tracking-widest mb-4 flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              <WalletCards size={16} className="mr-2 text-sky-500" /> Biweekly Expected Pay
+            </h3>
+            <div className="space-y-3">
+              {payPeriodStats.map(period => (
+                <div key={period.label} className={`grid grid-cols-[1fr_auto] gap-3 p-3 rounded-xl border ${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                  <div>
+                    <p className={`text-xs font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{period.label}</p>
+                    <p className="text-[11px] font-bold text-slate-500">{period.jobs} jobs / {period.hours.toFixed(1)} hrs</p>
+                  </div>
+                  <p className="text-sm font-black text-emerald-500">{formatCurrency(period.expected)}</p>
+                </div>
+              ))}
+              {payPeriodStats.length === 0 && <p className="text-xs text-slate-400 italic py-4 text-center">No pay period data yet</p>}
             </div>
           </div>
 
@@ -380,6 +436,11 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
             <div className="text-center">
               <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-amber-600' : 'text-amber-400'}`}>Half Days</p>
               <p className={`text-2xl font-black ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>{stats.halfDays}</p>
+            </div>
+            <div className={`h-8 w-px ${isDarkMode ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
+            <div className="text-center">
+              <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-emerald-600' : 'text-emerald-400'}`}>Assistant</p>
+              <p className={`text-2xl font-black ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>{stats.aideJobs}</p>
             </div>
           </div>
         </div>

@@ -4,7 +4,9 @@ import { parseSubCSV } from './utils/csvParser';
 import { Dashboard } from './components/Dashboard';
 import { JobForm } from './components/JobForm';
 import { PaymentForm } from './components/PaymentForm';
+import { Logo } from './components/Logo';
 import { fetchData, saveData } from './services/dataService';
+import { calculateExpectedPay, formatCurrency, getBiweeklyPeriodLabel, getRoleLabel } from './utils/payroll';
 import {
   LayoutDashboard,
   List,
@@ -122,9 +124,10 @@ const App: React.FC = () => {
   const exportAllDataCSV = () => {
     // 1. Assignments Section
     const jobHeaders = ['--- ASSIGNMENTS ---'];
-    const jobSubHeaders = ['Date', 'Class', 'Teacher', 'School', 'District', 'Type', 'Hours', 'From', 'To'];
+    const jobSubHeaders = ['Date', 'Role', 'Class', 'Teacher', 'School', 'District', 'Type', 'Hours', 'From', 'To', 'Pay Rate', 'Expected Pay'];
     const jobRows = jobs.map(j => [
       j.date,
+      getRoleLabel(j),
       `"${j.className}"`,
       `"${j.teacher}"`,
       `"${j.school}"`,
@@ -132,7 +135,9 @@ const App: React.FC = () => {
       j.dayType === 1 ? 'Full Day' : 'Half Day',
       j.hours,
       j.fromTime,
-      j.toTime
+      j.toTime,
+      j.payRate || '',
+      calculateExpectedPay(j).toFixed(2)
     ]);
 
     // 2. Payments Section
@@ -196,7 +201,8 @@ const App: React.FC = () => {
       result = result.filter(j =>
         j.teacher.toLowerCase().includes(q) ||
         j.className.toLowerCase().includes(q) ||
-        j.school.toLowerCase().includes(q)
+        j.school.toLowerCase().includes(q) ||
+        getRoleLabel(j).toLowerCase().includes(q)
       );
     }
 
@@ -234,9 +240,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <div className="text-center space-y-4">
-          <div className="bg-white p-4 rounded-2xl text-slate-900 mx-auto w-fit">
-            <Calendar size={32} className="animate-pulse" />
-          </div>
+          <Logo size={64} className="mx-auto animate-pulse" />
           <div className="flex items-center space-x-2 text-slate-400">
             <Loader2 size={20} className="animate-spin" />
             <span className="font-bold">Loading your data...</span>
@@ -251,16 +255,7 @@ const App: React.FC = () => {
       {/* Sidebar */}
       <aside className={`hidden md:flex flex-col w-80 p-8 border-r transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-100'}`}>
         <div className="flex items-center space-x-4 mb-2">
-          {/* Custom SVG Logo */}
-          <div className="bg-slate-900 text-white p-3 rounded-2xl shadow-xl">
-            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 30C20 24.4772 24.4772 20 30 20H70C75.5228 20 80 24.4772 80 30V70C80 75.5228 75.5228 80 70 80H30C24.4772 80 20 75.5228 20 70V30Z" fill="white" />
-              <path d="M40 35H60V65H40V35Z" fill="#0f172a" />
-              <path d="M30 45H70V55H30V45Z" fill="#0f172a" />
-              <circle cx="50" cy="50" r="10" fill="white" />
-              <path d="M50 42V58M42 50H58" stroke="#0f172a" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-          </div>
+          <Logo size={48} />
           <h1 className={`text-2xl font-black tracking-tighter ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>SubTrack</h1>
         </div>
 
@@ -335,7 +330,7 @@ const App: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search class or teacher..."
+                  placeholder="Search class, teacher, or role..."
                   className={`w-full pl-10 pr-4 py-2 border rounded-xl focus:outline-none focus:ring-2 font-bold transition-colors ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:ring-white/5 focus:border-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 focus:ring-slate-900/5 focus:border-slate-400'}`}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
@@ -405,11 +400,14 @@ const App: React.FC = () => {
                           <span className="text-[9px] font-bold mt-0.5 opacity-80">{dateInfo.year}</span>
                         </div>
                         <div className="space-y-2">
-                          <h4 className={`font-black text-xl leading-none flex items-center flex-wrap gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          <h4 className={`font-black text-xl leading-tight flex items-center flex-wrap gap-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                             {job.className}
                             <span className={`font-bold text-base px-2 border-l ${isDarkMode ? 'text-slate-400 border-slate-700' : 'text-slate-400 border-slate-200'}`}>w/ {job.teacher}</span>
                           </h4>
                           <div className="flex flex-wrap gap-3">
+                            <span className={`text-xs font-black flex items-center px-3 py-1.5 rounded-xl ${job.role === 'aide' ? 'bg-emerald-100 text-emerald-700' : (isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700')}`}>
+                              {getRoleLabel(job)}
+                            </span>
                             <span className={`text-xs font-black flex items-center px-3 py-1.5 rounded-xl ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
                               <MapPin size={14} className="mr-1.5 text-slate-400" /> {job.school}
                             </span>
@@ -420,7 +418,7 @@ const App: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className={`flex items-center space-x-8 mt-6 lg:mt-0 pt-6 lg:pt-0 border-t lg:border-t-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                      <div className={`flex flex-wrap items-center gap-6 lg:gap-8 mt-6 lg:mt-0 pt-6 lg:pt-0 border-t lg:border-t-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                         <div className="text-right">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Time Range</p>
                           <p className={`text-sm font-bold flex items-center justify-end ${isDarkMode ? 'text-slate-300' : 'text-slate-800'}`}>
@@ -431,11 +429,16 @@ const App: React.FC = () => {
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Hours</p>
                           <p className={`text-2xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{job.hours.toFixed(1)}</p>
                         </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expected</p>
+                          <p className="text-2xl font-black text-emerald-500">{formatCurrency(calculateExpectedPay(job))}</p>
+                          <p className="text-[10px] font-bold text-slate-500">{getBiweeklyPeriodLabel(job.date)}</p>
+                        </div>
                         <div className="flex items-center space-x-2">
-                          <button onClick={() => setEditingJob(job)} className={`p-2.5 text-slate-400 rounded-xl transition-all opacity-0 group-hover:opacity-100 ${isDarkMode ? 'hover:text-white hover:bg-slate-800' : 'hover:text-slate-900 hover:bg-slate-100'}`}>
+                          <button onClick={() => setEditingJob(job)} className={`p-2.5 text-slate-400 rounded-xl transition-all lg:opacity-0 group-hover:opacity-100 ${isDarkMode ? 'hover:text-white hover:bg-slate-800' : 'hover:text-slate-900 hover:bg-slate-100'}`}>
                             <Edit2 size={20} />
                           </button>
-                          <button onClick={() => deleteJob(job.id)} className={`p-2.5 text-slate-500 hover:text-rose-600 rounded-xl transition-all opacity-0 group-hover:opacity-100 ${isDarkMode ? 'hover:bg-rose-500/10' : 'hover:bg-rose-50'}`}>
+                          <button onClick={() => deleteJob(job.id)} className={`p-2.5 text-slate-500 hover:text-rose-600 rounded-xl transition-all lg:opacity-0 group-hover:opacity-100 ${isDarkMode ? 'hover:bg-rose-500/10' : 'hover:bg-rose-50'}`}>
                             <Trash2 size={20} />
                           </button>
                         </div>

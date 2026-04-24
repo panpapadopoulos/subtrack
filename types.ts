@@ -2,6 +2,7 @@
 export interface Job {
   id: string;
   date: string;
+  role?: 'teacher' | 'aide';
   className: string;
   teacher: string;
   school: string;
@@ -10,6 +11,7 @@ export interface Job {
   fromTime: string;
   toTime: string;
   hours: number;
+  payRate?: number;
 }
 
 export interface Payment {
