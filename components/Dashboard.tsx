@@ -5,7 +5,7 @@ import {
   Bar, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, ComposedChart, Line
 } from 'recharts';
-import { DollarSign, Briefcase, Clock, Calendar, TrendingUp, BarChart3, Star, ChevronDown, Filter, WalletCards } from 'lucide-react';
+import { DollarSign, Briefcase, Clock, Calendar, TrendingUp, BarChart3, Star, ChevronDown, Filter, WalletCards, Receipt } from 'lucide-react';
 import { calculateExpectedPay, formatCurrency, getBiweeklyPeriodLabel, getJobRole } from '../utils/payroll';
 
 interface Props {
@@ -85,8 +85,10 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
     return {
       totalEarnings,
       expectedEarnings,
+      unpaidEstimate: Math.max(expectedEarnings - totalEarnings, 0),
       totalHours,
       totalJobs: statsJobs.length,
+      teacherJobs: teacherJobs.length,
       aideJobs: aideJobs.length,
       fullDays,
       halfDays
@@ -221,7 +223,7 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
             <DollarSign size={28} />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Net Earnings</p>
+            <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Paid So Far</p>
             <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(stats.totalEarnings)}</p>
           </div>
         </div>
@@ -238,11 +240,11 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
         <div className={`p-7 rounded-3xl shadow-sm border flex items-center space-x-5 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
           }`}>
           <div className="p-4 bg-rose-100 text-rose-700 rounded-2xl">
-            <Calendar size={28} />
+            <Receipt size={28} />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Total Assignments</p>
-            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{stats.totalJobs}</p>
+            <p className="text-xs text-slate-500 font-black uppercase tracking-widest mb-1">Still Expected</p>
+            <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(stats.unpaidEstimate)}</p>
           </div>
         </div>
         <div className={`p-7 rounded-3xl shadow-sm border flex items-center space-x-5 transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
@@ -257,50 +259,73 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 rounded-3xl border transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+        {[
+          { label: 'Assignments', value: stats.totalJobs },
+          { label: 'Teacher Jobs', value: stats.teacherJobs },
+          { label: 'Assistant Jobs', value: stats.aideJobs },
+          { label: 'Full / Half', value: `${stats.fullDays} / ${stats.halfDays}` },
+        ].map(item => (
+          <div key={item.label} className={`rounded-2xl p-4 border ${isDarkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{item.label}</p>
+            <p className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] gap-8">
         {/* Monthly Activity Chart */}
         <div className={`p-8 rounded-3xl shadow-sm border transition-colors ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
           }`}>
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center space-x-3">
               <TrendingUp size={24} className={isDarkMode ? 'text-white' : 'text-slate-900'} />
-              <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Income & Volume</h3>
+              <div>
+                <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Pay & Work Volume</h3>
+                <p className="text-xs font-bold text-slate-500">Paid amounts compared with expected assignment pay</p>
+              </div>
             </div>
-            <div className="flex items-center space-x-4 text-[10px] font-bold">
-              <div className="flex items-center"><div className="w-3 h-3 bg-emerald-500 rounded-sm mr-1"></div> Income</div>
+            <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-slate-500">
+              <div className="flex items-center"><div className="w-3 h-3 bg-emerald-500 rounded-sm mr-1"></div> Paid</div>
               <div className="flex items-center"><div className="w-3 h-3 bg-sky-500 rounded-sm mr-1"></div> Expected</div>
               <div className="flex items-center"><div className={`w-3 h-3 rounded-sm mr-1 ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`}></div> Jobs</div>
             </div>
           </div>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#1e293b' : '#f1f5f9'} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
-                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
-                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
-                <Tooltip
-                  cursor={{ fill: isDarkMode ? '#ffffff05' : '#f8fafc' }}
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-                    padding: '16px',
-                    backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
-                    color: isDarkMode ? '#f8fafc' : '#0f172a'
-                  }}
-                  labelStyle={{ fontWeight: 900, color: isDarkMode ? '#f8fafc' : '#0f172a', marginBottom: '8px', fontSize: '14px' }}
-                  labelFormatter={(label, items) => {
-                    const item = items[0]?.payload;
-                    return item?.fullName || label;
-                  }}
-                  formatter={(value: any, name: string) => [name === 'income' || name === 'expected' ? formatCurrency(value) : value, name === 'income' ? 'Paid' : name === 'expected' ? 'Expected' : 'Jobs']}
-                />
-                <Bar yAxisId="left" dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} />
-                <Bar yAxisId="left" dataKey="expected" fill="#0ea5e9" radius={[6, 6, 0, 0]} barSize={40} />
-                <Line yAxisId="right" type="monotone" dataKey="count" stroke={isDarkMode ? '#ffffff' : '#0f172a'} strokeWidth={3} dot={{ r: 4, fill: isDarkMode ? '#ffffff' : '#0f172a' }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+            {monthlyStats.length === 0 ? (
+              <div className={`h-full rounded-2xl border border-dashed flex items-center justify-center text-center px-6 ${isDarkMode ? 'border-slate-700 bg-slate-800/30' : 'border-slate-200 bg-slate-50'}`}>
+                <p className="text-sm font-bold text-slate-500">Add assignments and payments to see monthly pay trends.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={monthlyStats} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? '#1e293b' : '#f1f5f9'} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 800, fill: '#64748b' }} />
+                  <Tooltip
+                    cursor={{ fill: isDarkMode ? '#ffffff05' : '#f8fafc' }}
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
+                      boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                      padding: '16px',
+                      backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+                      color: isDarkMode ? '#f8fafc' : '#0f172a'
+                    }}
+                    labelStyle={{ fontWeight: 900, color: isDarkMode ? '#f8fafc' : '#0f172a', marginBottom: '8px', fontSize: '14px' }}
+                    labelFormatter={(label, items) => {
+                      const item = items[0]?.payload;
+                      return item?.fullName || label;
+                    }}
+                    formatter={(value: any, name: string) => [name === 'income' || name === 'expected' ? formatCurrency(value) : value, name === 'income' ? 'Paid' : name === 'expected' ? 'Expected' : 'Jobs']}
+                  />
+                  <Bar yAxisId="left" dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} barSize={28} />
+                  <Bar yAxisId="left" dataKey="expected" fill="#0ea5e9" radius={[6, 6, 0, 0]} barSize={28} />
+                  <Line yAxisId="right" type="monotone" dataKey="count" stroke={isDarkMode ? '#ffffff' : '#0f172a'} strokeWidth={3} dot={{ r: 4, fill: isDarkMode ? '#ffffff' : '#0f172a' }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -425,24 +450,6 @@ export const Dashboard: React.FC<Props> = ({ jobs, payments, isDarkMode = true }
             </div>
           </div>
 
-          {/* Full/Half Breakdown */}
-          <div className={`col-span-1 sm:col-span-2 p-6 rounded-3xl shadow-xl flex items-center justify-around border transition-colors ${isDarkMode ? 'bg-white border-white' : 'bg-slate-900 border-slate-900'
-            }`}>
-            <div className="text-center">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-blue-600' : 'text-blue-400'}`}>Full Days</p>
-              <p className={`text-2xl font-black ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>{stats.fullDays}</p>
-            </div>
-            <div className={`h-8 w-px ${isDarkMode ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
-            <div className="text-center">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-amber-600' : 'text-amber-400'}`}>Half Days</p>
-              <p className={`text-2xl font-black ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>{stats.halfDays}</p>
-            </div>
-            <div className={`h-8 w-px ${isDarkMode ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
-            <div className="text-center">
-              <p className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-emerald-600' : 'text-emerald-400'}`}>Assistant</p>
-              <p className={`text-2xl font-black ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>{stats.aideJobs}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
